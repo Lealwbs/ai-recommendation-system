@@ -1,0 +1,29 @@
+@startuml
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor Cliente
+actor Administrador
+actor Desenvolvedor
+
+component "API Principal\n(Java - Spring/Quarkus)" as API
+component "Motor de Recomendação\n(Python + ML)" as ML
+component "Busca Vetorial\n(FAISS / Pinecone)" as VS
+component "Catálogo de Itens" as DB
+
+Cliente --> API : Envia texto p/ recomendação
+API --> ML : Chamada REST (texto)
+ML --> VS : Busca vetorial
+VS --> ML : Itens similares
+ML --> API : Lista de recomendações
+API --> Cliente : Retorna resposta
+
+Administrador --> API : Cadastra/Remove itens
+API --> DB : Salva itens
+API --> ML : Solicita gerar embeddings
+ML --> VS : Atualiza índice
+
+Desenvolvedor --> API : Consome endpoints
+
+@enduml
