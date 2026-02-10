@@ -1,0 +1,52 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: catalog-db
+    ports:
+      - "5432:5432" 
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin_password
+      - POSTGRES_DB=recommendation_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data 
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d recommendation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ml-service:
+    build: ./ml-service
+    container_name: ml-service
+    ports:
+      - "5000:5000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: on-failure
+
+  api-java:
+    build: ./api-java
+    container_name: api-java
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy 
+      ml-service:
+        condition: service_started
+    environment:
+      
+      - ML_SERVICE_URL=http://ml-service:5000
+      
+     
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/recommendation_db
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin_password
+      
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update 
+
+volumes:
+  postgres_data:
